@@ -6,12 +6,6 @@ import requests,argparse,sys
 from os import getuid
 from sh import lsusb
 
-parser = argparse.ArgumentParser(description='Upload USB descriptors to http://usbdescriptors.com/.')
-parser.add_argument('-dev', help='Device, in format: vendor:device (optional)')
-parser.add_argument('-c', default='', help='Comment (optional)')
-parser.add_argument('-d', action='store_true', default=False, help='Enable debugging output')
-args = parser.parse_args()
-
 def info(msg):
     print '[+] {}'.format(msg)
 
@@ -20,6 +14,14 @@ def error(msg):
 
 def debug(msg):
     if args.d: print '[*] {}'.format(msg)
+
+def parse_cl():
+    global args
+    parser = argparse.ArgumentParser(description='Upload USB descriptors to http://usbdescriptors.com/.')
+    parser.add_argument('-dev', help='Device, in format: vendor:device (optional)')
+    parser.add_argument('-c', default='', help='Comment (optional)')
+    parser.add_argument('-d', action='store_true', default=False, help='Enable debugging output')
+    args = parser.parse_args()
 
 def device_info(vendor,device):
     return lsusb('-v','-d','{}:{}'.format(vendor,device))
@@ -41,31 +43,28 @@ def choose_device():
 
 def upload(vendor,device,lsusb,comment):
     info('Uploading...')
-    payload = {'vendor_entry':unicode(vendor),'device_entry':unicode(device),'comment_entry':unicode(comment).encode('utf8'),'descriptor_entry':unicode(lsusb).encode('utf8')}
+    payload = {'vendor_entry':unicode(vendor),'device_entry':unicode(device),
+            'comment_entry':unicode(comment).encode('utf8'),'descriptor_entry':unicode(lsusb).encode('utf8')}
     try:
         r = requests.post('http://usbdescriptors.com/cgi-bin/add',data=payload)
         if not r.status_code == requests.codes.ok:
             raise Exception
-        if 'text success' in r.text:
+        if 'success' in r.text:
             return True
         elif 'device exists' in r.text:
             info('Device already exists')
             sys.exit(0)
-        elif 'missing' in r.text:
-            raise Exception('Something is missing: {}'.format(r.text))
-        elif 'doesnt match' in r.text:
-            raise Exception('Input format is wrong: {}'.format(r.text))
-        elif 'cant write to database' in r.text:
-            raise Exception('Encoding error: {}'.format(r.text))
-        return True
+        else:
+            raise Exception('Error: {}'.format(r.text))
     except Exception as e:
         debug(str(e))
         return False
 
 if __name__ == '__main__':
-    if not getuid() == 0:
+    if not getuid() is 0:
         error('This script should be run as root for more comprehensive output!')
         sys.exit(0)
+    parse_cl()
     if not args.dev:
         vendor,device = choose_device()
     else:
@@ -81,7 +80,6 @@ if __name__ == '__main__':
 
     lsusb_dump = device_info(vendor,device)
     if not upload(vendor,device,lsusb_dump,args.c):
-        error('An error occured during upload. Please try again in a few minutes.')
-        sys.exit(0)
+        error('An error occured during upload. Please try again later.')
     else:
         info('Successfully uploaded USB descriptor. Thanks for your contribution!')
