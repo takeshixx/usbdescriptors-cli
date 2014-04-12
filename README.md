@@ -2,8 +2,8 @@ usbdescriptors-cli
 ==================
 
 A command line utility for uploading USB descriptors to usbdescriptors.com. Feel free to contribute! This script needs lsusb and the following Python packages (install them via pip):
-    * requests
-    * sh
+* requests
+* sh
 
 ### Usage
 Run the script without any paramters to choose from a list of all attached USB devices:
