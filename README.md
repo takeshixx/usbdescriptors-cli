@@ -19,6 +19,10 @@ $ ./usbdescriptors.py
 [7] Bus 003 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
 Please enter an ID between 0 and 7: 
 ```
+Try to submit each connected USB device:
+```
+$ ./usbdescriptors.py -all
+```
 Upload a device via it's vendor and device ID:
 ```
 $ ./usbdescriptors.py -dev 148f:3070
@@ -26,14 +30,16 @@ $ ./usbdescriptors.py -dev 148f:3070
 
 ### Help
 ```
-$ ./usbdescriptors.py -h
-usage: usbdescriptors.py [-h] [-dev DEV] [-c C] [-d]
+$  ./usbdescriptors.py -h
+usage: usbdescriptors.py [-h] [-dev DEV] [-all] [-c C] [-d]
 
 Upload USB descriptors to http://usbdescriptors.com/.
 
 optional arguments:
   -h, --help  show this help message and exit
   -dev DEV    Device, in format: vendor:device (optional)
+  -all        Try submitting all connected devices (optional)
   -c C        Comment (optional)
   -d          Enable debugging output
+
 ```
