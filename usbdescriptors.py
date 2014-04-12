@@ -19,6 +19,7 @@ def parse_cl():
     global args
     parser = argparse.ArgumentParser(description='Upload USB descriptors to http://usbdescriptors.com/.')
     parser.add_argument('-dev', help='Device, in format: vendor:device (optional)')
+    parser.add_argument('-all', action='store_true', default=False, help='Try submitting all connected devices (optional)')
     parser.add_argument('-c', default='', help='Comment (optional)')
     parser.add_argument('-d', action='store_true', default=False, help='Enable debugging output')
     args = parser.parse_args()
@@ -33,8 +34,11 @@ def choose_device():
         if not dev: continue
         print '[{}] {}'.format(count,dev)
         count += 1
-    choice = raw_input('Please enter an ID between 0 and {}: '.format(count-1))
-    choice = int(choice)
+    try:
+        choice = raw_input('Please enter an ID between 0 and {}: '.format(count-1))
+        choice = int(choice)
+    except:
+        sys.exit(0)
     if not choice >= 1 and not choice <= count:
         error('Invalid choice: {}'.format(choice))
         sys.exit(0)
@@ -50,9 +54,9 @@ def upload(vendor,device,lsusb,comment):
         if not r.status_code == requests.codes.ok:
             raise Exception
         if 'success' in r.text:
-            return True
+            return 1 
         elif 'device exists' in r.text:
-            info('Device already exists')
+            return 2
             sys.exit(0)
         else:
             raise Exception('Error: {}'.format(r.text))
@@ -65,8 +69,13 @@ if __name__ == '__main__':
         error('This script should be run as root for more comprehensive output!')
         sys.exit(0)
     parse_cl()
-    if not args.dev:
-        vendor,device = choose_device()
+    usb_devices = []
+    if args.all:
+        for entry in lsusb().split('\n'):
+            if not entry: continue
+            usb_devices.append(entry.split(' ')[5].split(':'))
+    elif not args.dev:
+        usb_devices.append(choose_device())
     else:
         vendor,device = args.dev.split(':')
         try:
@@ -77,9 +86,21 @@ if __name__ == '__main__':
         except ValueError:
             error('Invalid vendor or device ID')
             sys.exit(0)
+        usb_devices.append([vendor,device])
 
-    lsusb_dump = device_info(vendor,device)
-    if not upload(vendor,device,lsusb_dump,args.c):
-        error('An error occured during upload. Please try again later.')
-    else:
-        info('Successfully uploaded USB descriptor. Thanks for your contribution!')
+    success = 0
+    for dev in usb_devices:
+        if not dev: continue
+        vendor,device = dev
+        lsusb_dump = device_info(vendor,device)
+        debug('Trying to submit vendor: {}, device: {}'.format(vendor,device))
+        ret = upload(vendor,device,lsusb_dump,args.c)
+        if not ret:
+            error('Uploading vendor: {}, device: {} failed!'.format(vendor,device))
+        elif ret is 1: 
+            info('Successfully uploaded vendor: {}, device: {}'.format(vendor,device))
+            success += 1
+        elif ret is 2:
+            error('Device already exists')
+        
+    info('Successfully submitted {} of {} descriptors'.format(success,len(usb_devices)))
