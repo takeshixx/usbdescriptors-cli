@@ -1,8 +1,9 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
-# Script to upload USB descriptors to http://usbdescriptors.com/.
+# Utility to upload USB descriptors to http://usbdescriptors.com/.
 # Author: takeshix@adversec.com
-import requests,argparse,sys
+import requests,argparse
+from sys import exit
 from os import getuid
 from sh import lsusb
 
@@ -38,10 +39,10 @@ def choose_device():
         choice = raw_input('Please enter an ID between 0 and {}: '.format(count-1))
         choice = int(choice)
     except:
-        sys.exit(0)
+        exit(0)
     if not choice >= 1 and not choice <= count:
         error('Invalid choice: {}'.format(choice))
-        sys.exit(0)
+        exit(0)
     vendor,device = all_devices[choice].split(' ')[5].split(':')
     return vendor,device
 
@@ -57,7 +58,6 @@ def upload(vendor,device,lsusb,comment):
             return 1 
         elif 'device exists' in r.text:
             return 2
-            sys.exit(0)
         else:
             raise Exception('Error: {}'.format(r.text))
     except Exception as e:
@@ -67,7 +67,7 @@ def upload(vendor,device,lsusb,comment):
 if __name__ == '__main__':
     if not getuid() is 0:
         error('This script should be run as root for more comprehensive output!')
-        sys.exit(0)
+        exit(0)
     parse_cl()
     usb_devices = []
     if args.all:
@@ -85,7 +85,7 @@ if __name__ == '__main__':
                 raise ValueError
         except ValueError:
             error('Invalid vendor or device ID')
-            sys.exit(0)
+            exit(0)
         usb_devices.append([vendor,device])
 
     success = 0
