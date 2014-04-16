@@ -2,10 +2,11 @@
 # -*- coding: utf-8 -*-
 # Utility to upload USB descriptors to http://usbdescriptors.com/.
 # Author: takeshix@adversec.com
-import requests,argparse
 from sys import exit
 from os import getuid
 from sh import lsusb
+from argparse import ArgumentParser
+from requests import post,codes
 
 def info(msg):
     print '[+] {}'.format(msg)
@@ -18,7 +19,7 @@ def debug(msg):
 
 def parse_cl():
     global args
-    parser = argparse.ArgumentParser(description='Upload USB descriptors to http://usbdescriptors.com/.')
+    parser = ArgumentParser(description='Upload USB descriptors to http://usbdescriptors.com/.')
     parser.add_argument('-dev', help='Device, in format: vendor:device (optional)')
     parser.add_argument('-all', action='store_true', default=False, help='Try submitting all connected devices (optional)')
     parser.add_argument('-c', default='', help='Comment (optional)')
@@ -51,8 +52,8 @@ def upload(vendor,device,lsusb,comment):
     payload = {'vendor_entry':unicode(vendor),'device_entry':unicode(device),
             'comment_entry':unicode(comment).encode('utf8'),'descriptor_entry':unicode(lsusb).encode('utf8')}
     try:
-        r = requests.post('http://usbdescriptors.com/cgi-bin/add',data=payload)
-        if not r.status_code == requests.codes.ok:
+        r = post('http://usbdescriptors.com/cgi-bin/add',data=payload)
+        if not r.status_code == codes.ok:
             raise Exception
         if 'success' in r.text:
             return 1 
